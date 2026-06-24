@@ -20,7 +20,6 @@
     "vite": "^8.0.12"
   },
   "dependencies": {
-    "qrcode": "^1.5.4",
-    "svelte-qrcode": "^1.0.1"
+    "qrcode": "^1.5.4"
   }
 }

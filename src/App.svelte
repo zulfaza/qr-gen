@@ -17,7 +17,7 @@
     width: 960,
     color: {
       dark: '#111827ff',
-      light: '#ffffffff',
+      light: '#00000000',
     },
   }
 
@@ -32,11 +32,12 @@
     },
   }
 
-  let input = 'https://svelte.dev'
+  let input = ''
   let qrState: QrState = { kind: 'idle' }
   let requestId = 0
 
   $: void renderQr(input)
+  $: encodedLength = getEncodedLength(qrState, input)
 
   async function renderQr(rawText: string): Promise<void> {
     const text = rawText.trim()
@@ -73,33 +74,6 @@
     }
   }
 
-  function downloadPng(): void {
-    if (qrState.kind !== 'ready') {
-      return
-    }
-
-    downloadUrl(qrState.pngDataUrl, buildFilename(qrState.text, 'png'))
-  }
-
-  function downloadSvg(): void {
-    if (qrState.kind !== 'ready') {
-      return
-    }
-
-    const blob = new Blob([qrState.svgMarkup], { type: 'image/svg+xml;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    downloadUrl(url, buildFilename(qrState.text, 'svg'))
-    URL.revokeObjectURL(url)
-  }
-
-  function downloadUrl(url: string, filename: string): void {
-    const link = document.createElement('a')
-    link.href = url
-    link.download = filename
-    link.rel = 'noopener'
-    link.click()
-  }
-
   function buildFilename(text: string, format: DownloadFormat): string {
     const slug = text
       .toLowerCase()
@@ -110,49 +84,80 @@
     const name = slug.length > 0 ? slug : 'qr-code'
     return `${name}.${format}`
   }
+
+  function buildSvgDataUrl(svgMarkup: string): string {
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgMarkup)}`
+  }
+
+  function getEncodedLength(state: QrState, rawText: string): number {
+    switch (state.kind) {
+      case 'idle':
+      case 'failed':
+        return rawText.trim().length
+      case 'generating':
+      case 'ready':
+        return state.text.length
+    }
+  }
 </script>
 
 <main class="shell">
   <section class="workspace" aria-labelledby="page-title">
-    <div class="intro">
-      <p class="eyebrow">QR Generator</p>
-      <h1 id="page-title">String to QR</h1>
-      <p class="summary">Generate a QR code from any text, URL, or identifier.</p>
-    </div>
+    <header class="intro">
+      <p class="utility-label">Personal QR utility</p>
+      <h1 id="page-title">QR generator</h1>
+      <p class="summary">Paste text or a URL. Preview updates automatically; PNG and SVG unlock when ready.</p>
+    </header>
 
     <div class="generator">
-      <label for="qr-input">Content</label>
+      <div class="field-header">
+        <label for="qr-input">Content</label>
+        <span>{encodedLength} characters</span>
+      </div>
       <textarea
         id="qr-input"
         bind:value={input}
         rows="7"
         spellcheck="false"
         placeholder="Paste text or URL"
+        aria-describedby="qr-input-hint"
       ></textarea>
+      <p id="qr-input-hint" class="field-hint">Leading and trailing whitespace is trimmed before encoding.</p>
 
       <div class="actions">
-        <button type="button" onclick={downloadPng} disabled={qrState.kind !== 'ready'}>
-          Download PNG
-        </button>
-        <button type="button" class="secondary" onclick={downloadSvg} disabled={qrState.kind !== 'ready'}>
-          Download SVG
-        </button>
+        {#if qrState.kind === 'ready'}
+          <a class="download-button" href={qrState.pngDataUrl} download={buildFilename(qrState.text, 'png')}>
+            Download PNG
+          </a>
+          <a
+            class="download-button secondary"
+            href={buildSvgDataUrl(qrState.svgMarkup)}
+            download={buildFilename(qrState.text, 'svg')}
+          >
+            Download SVG
+          </a>
+        {:else}
+          <button type="button" disabled title="Enter content to generate a QR code">Download PNG</button>
+          <button type="button" class="secondary" disabled title="Enter content to generate a QR code">
+            Download SVG
+          </button>
+        {/if}
       </div>
     </div>
 
-    <aside class="preview" aria-live="polite">
+    <aside class="preview" aria-live="polite" aria-busy={qrState.kind === 'generating'}>
       {#if qrState.kind === 'ready'}
         <img src={qrState.pngDataUrl} alt="Generated QR code" />
-        <p>{qrState.text.length} characters encoded</p>
+        <p class="status ready">Ready to download · {qrState.text.length} characters encoded</p>
       {:else if qrState.kind === 'generating'}
-        <div class="placeholder">Generating</div>
-        <p>{qrState.text.length} characters</p>
+        <div class="placeholder generating">Generating</div>
+        <p class="status">Encoding {qrState.text.length} characters</p>
       {:else if qrState.kind === 'failed'}
         <div class="placeholder error">Failed</div>
-        <p>{qrState.message}</p>
+        <p class="status error">{qrState.message}</p>
       {:else}
         <div class="placeholder">Enter content</div>
-        <p>Downloads unlock after generation.</p>
+        <p class="status">Downloads unlock after a valid QR code is generated.</p>
       {/if}
     </aside>
   </section>
