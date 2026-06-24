@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="QR generator">
-  <rect width="64" height="64" rx="12" fill="#f7f8fa"/>
-  <rect x="6" y="6" width="52" height="52" rx="8" fill="#fff" stroke="#d8dee8" stroke-width="2"/>
-  <path fill="#111827" d="M14 14h14v14H14V14Zm4 4v6h6v-6h-6Zm18-4h14v14H36V14Zm4 4v6h6v-6h-6ZM14 36h14v14H14V36Zm4 4v6h6v-6h-6Zm22-4h6v6h-6v-6Zm-6 0h4v4h-4v-4Zm12 8h4v6h-8v-4h4v-2Zm-12 2h6v4h-6v-4Zm0-14h4v4h-4v-4Zm10-2h6v4h-6v-4Z"/>
-  <path fill="#0f766e" d="M30 30h6v6h-6z"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="QR generator">
+  <rect width="64" height="64" fill="#ffffff"/>
+  <rect x="2" y="2" width="60" height="60" fill="none" stroke="#101417" stroke-width="3"/>
+  <path fill="#14492f" d="M10 10h16v16H10V10Zm5 5v6h6v-6h-6Zm23-5h16v16H38V10Zm5 5v6h6v-6h-6ZM10 38h16v16H10V38Zm5 5v6h6v-6h-6Zm23-5h7v7h-7v-7Zm-7 0h4v4h-4v-4Zm14 9h9v7h-6v-4h-3v-3Zm-14 0h7v7h-7v-7Zm0-16h7v7h-7v-7Zm12 0h11v4H43v-4Z"/>
+  <path fill="#101417" d="M30 10h4v8h-4v-8Zm0 22h4v4h-4v-4Zm18 4h6v7h-6v-7Zm-14 8h4v4h-4v-4Z"/>
 </svg>

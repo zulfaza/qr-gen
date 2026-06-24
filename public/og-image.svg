@@ -1,21 +1,37 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="QR generator social preview">
-  <rect width="1200" height="630" fill="#f7f8fa"/>
-  <rect x="60" y="60" width="1080" height="510" rx="32" fill="#fff" stroke="#d8dee8" stroke-width="2"/>
-  <g transform="translate(112 118)">
-    <rect width="270" height="270" rx="28" fill="#f1f5f9"/>
-    <rect x="26" y="26" width="218" height="218" rx="18" fill="#fff" stroke="#d8dee8" stroke-width="2"/>
-    <path fill="#111827" d="M54 54h56v56H54V54Zm16 16v24h24V70H70Zm90-16h56v56h-56V54Zm16 16v24h24V70h-24ZM54 160h56v56H54v-56Zm16 16v24h24v-24H70Zm122-16h24v24h-24v-24Zm-32 0h18v18h-18v-18Zm52 42h18v24h-40v-18h22v-6Zm-52 8h28v16h-28v-16Zm0-68h18v18h-18v-18Zm50-10h28v18h-28v-18Z"/>
-    <path fill="#0f766e" d="M132 132h34v34h-34z"/>
-  </g>
-  <g fill="#111827" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
-    <text x="440" y="214" font-size="70" font-weight="800" letter-spacing="0">QR generator</text>
-    <text x="444" y="282" font-size="30" fill="#4b5563">Generate clean QR codes from text or URLs.</text>
-    <text x="444" y="330" font-size="30" fill="#4b5563">Download PNG and SVG in seconds.</text>
-  </g>
-  <g transform="translate(444 384)" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="24" font-weight="700">
-    <rect width="176" height="56" rx="10" fill="#0f766e"/>
-    <text x="28" y="36" fill="#fff">PNG export</text>
-    <rect x="196" width="166" height="56" rx="10" fill="#fff" stroke="#0f766e" stroke-width="2"/>
-    <text x="232" y="36" fill="#115e59">SVG export</text>
+  <rect width="1200" height="630" fill="#ffffff"/>
+  <rect x="1" y="1" width="1198" height="628" fill="none" stroke="#101417" stroke-width="2"/>
+  <path d="M1 266H1199M730 266V582M1 582H1199" fill="none" stroke="#101417" stroke-width="2"/>
+
+  <g font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+    <text x="74" y="91" fill="#14492f" font-size="19" font-weight="900" letter-spacing="10">PERSONAL QR UTILITY</text>
+    <text x="74" y="181" fill="#101417" font-size="82" font-weight="900" letter-spacing="-1">QR</text>
+    <text x="74" y="262" fill="#101417" font-size="82" font-weight="900" letter-spacing="-1">Generator</text>
+
+    <text x="1102" y="136" fill="#5e646d" font-size="25" font-weight="650" text-anchor="end">
+      <tspan x="1102" dy="0">Paste text or a URL.</tspan>
+      <tspan x="1102" dy="36">Preview updates instantly.</tspan>
+      <tspan x="1102" dy="36">Export PNG or SVG.</tspan>
+    </text>
+
+    <text x="74" y="336" fill="#101417" font-size="19" font-weight="900" letter-spacing="7">CONTENT</text>
+    <text x="612" y="336" fill="#9aa1aa" font-size="19" font-weight="800" letter-spacing="4" text-anchor="end">11 CHARACTERS</text>
+    <rect x="74" y="360" width="592" height="108" fill="#ffffff" stroke="#101417" stroke-width="2"/>
+    <text x="104" y="421" fill="#101417" font-size="31" font-weight="650">hello there</text>
+    <text x="74" y="507" fill="#101417" font-size="19" font-weight="900" letter-spacing="7">COLORS</text>
+    <path d="M188 500H666" stroke="#d7dadd" stroke-width="2"/>
+    <rect x="74" y="532" width="216" height="50" fill="#ffffff" stroke="#101417" stroke-width="2"/>
+    <rect x="94" y="547" width="20" height="20" fill="#14492f"/>
+    <text x="132" y="565" fill="#101417" font-size="22" font-weight="650">#14492F</text>
+    <rect x="318" y="532" width="216" height="50" fill="#ffffff" stroke="#101417" stroke-width="2"/>
+    <rect x="338" y="547" width="20" height="20" fill="#ffffff" stroke="#c4cbd2" stroke-width="2"/>
+    <text x="376" y="565" fill="#101417" font-size="22" font-weight="650">#FFFFFF</text>
+
+    <text x="780" y="336" fill="#101417" font-size="19" font-weight="900" letter-spacing="7">PREVIEW</text>
+    <image x="850" y="356" width="200" height="200" href="og-qr.png" preserveAspectRatio="xMidYMid meet"/>
+    <text x="950" y="567" fill="#9aa1aa" font-size="18" font-weight="800" letter-spacing="6" text-anchor="middle">512 × 512 PX</text>
+
+    <text x="74" y="615" fill="#9aa1aa" font-size="20" font-weight="800" letter-spacing="4">© 2026</text>
+    <text x="1128" y="615" fill="#14492f" font-size="18" font-weight="900" letter-spacing="4" text-anchor="end">GITHUB ↗</text>
   </g>
 </svg>
