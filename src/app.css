@@ -207,6 +207,37 @@ textarea:focus-visible {
   margin: -2px 0 0;
 }
 
+.colors {
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.colors legend {
+  padding: 0 6px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.color-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.color-field {
+  flex: 1 1 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;

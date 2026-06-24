@@ -1,6 +1,7 @@
 <script lang="ts">
   import { toDataURL, toString } from 'qrcode'
   import type { QRCodeToDataURLOptions, QRCodeToStringOptions } from 'qrcode'
+  import ColorPicker from './ColorPicker.svelte'
 
   type DownloadFormat = 'png' | 'svg'
 
@@ -10,63 +11,72 @@
     | { kind: 'ready'; text: string; pngDataUrl: string; svgMarkup: string }
     | { kind: 'failed'; message: string }
 
-  const pngOptions: QRCodeToDataURLOptions = {
-    type: 'image/png',
-    errorCorrectionLevel: 'M',
-    margin: 2,
-    width: 960,
-    color: {
-      dark: '#111827ff',
-      light: '#00000000',
-    },
-  }
-
-  const svgOptions: QRCodeToStringOptions = {
-    type: 'svg',
-    errorCorrectionLevel: 'M',
-    margin: 2,
-    width: 512,
-    color: {
-      dark: '#111827ff',
-      light: '#ffffffff',
-    },
-  }
-
-  let input = ''
+  let input = 'hello there'
+  let darkColor = '#111827ff'
+  let lightColor = '#ffffffff'
   let qrState: QrState = { kind: 'idle' }
+  let busy = false
   let requestId = 0
 
-  $: void renderQr(input)
+  $: void renderQr(input, darkColor, lightColor)
   $: encodedLength = getEncodedLength(qrState, input)
 
-  async function renderQr(rawText: string): Promise<void> {
+  function buildPngOptions(dark: string, light: string): QRCodeToDataURLOptions {
+    return {
+      type: 'image/png',
+      errorCorrectionLevel: 'M',
+      margin: 2,
+      width: 960,
+      color: { dark, light },
+    }
+  }
+
+  function buildSvgOptions(dark: string, light: string): QRCodeToStringOptions {
+    return {
+      type: 'svg',
+      errorCorrectionLevel: 'M',
+      margin: 2,
+      width: 512,
+      color: { dark, light },
+    }
+  }
+
+  async function renderQr(rawText: string, dark: string, light: string): Promise<void> {
     const text = rawText.trim()
     const currentRequestId = requestId + 1
     requestId = currentRequestId
 
     if (text.length === 0) {
+      busy = false
       qrState = { kind: 'idle' }
       return
     }
 
-    qrState = { kind: 'generating', text }
+    busy = true
+    // Keep the previous QR on screen while regenerating to avoid flicker;
+    // only show the placeholder when there is nothing to show yet.
+    if (qrState.kind !== 'ready') {
+      qrState = { kind: 'generating', text }
+    }
 
     try {
       const [pngDataUrl, svgMarkup] = await Promise.all([
-        toDataURL(text, pngOptions),
-        toString(text, svgOptions),
+        toDataURL(text, buildPngOptions(dark, light)),
+        toString(text, buildSvgOptions(dark, light)),
       ])
 
       if (currentRequestId !== requestId) {
         return
       }
 
+      busy = false
       qrState = { kind: 'ready', text, pngDataUrl, svgMarkup }
     } catch (error: unknown) {
       if (currentRequestId !== requestId) {
         return
       }
 
+      busy = false
       qrState = {
         kind: 'failed',
         message: error instanceof Error ? error.message : 'QR generation failed.',
@@ -124,6 +134,21 @@
       ></textarea>
       <p id="qr-input-hint" class="field-hint">Leading and trailing whitespace is trimmed before encoding.</p>
 
+      <fieldset class="colors">
+        <legend>Colors</legend>
+        <div class="color-row">
+          <div class="color-field">
+            <span>QR color</span>
+            <ColorPicker bind:value={darkColor} label="QR color" />
+          </div>
+          <div class="color-field">
+            <span>Background</span>
+            <ColorPicker bind:value={lightColor} label="Background color" />
+          </div>
+        </div>
+        <p class="field-hint">Lower a color's opacity for a transparent background (PNG only).</p>
+      </fieldset>
+
       <div class="actions">
         {#if qrState.kind === 'ready'}
           <a class="download-button" href={qrState.pngDataUrl} download={buildFilename(qrState.text, 'png')}>
@@ -145,10 +170,14 @@
       </div>
     </div>
 
-    <aside class="preview" aria-live="polite" aria-busy={qrState.kind === 'generating'}>
+    <aside class="preview" aria-live="polite" aria-busy={busy}>
       {#if qrState.kind === 'ready'}
         <img src={qrState.pngDataUrl} alt="Generated QR code" />
-        <p class="status ready">Ready to download · {qrState.text.length} characters encoded</p>
+        {#if busy}
+          <p class="status">Updating preview…</p>
+        {:else}
+          <p class="status ready">Ready to download · {qrState.text.length} characters encoded</p>
+        {/if}
       {:else if qrState.kind === 'generating'}
         <div class="placeholder generating">Generating</div>
         <p class="status">Encoding {qrState.text.length} characters</p>
