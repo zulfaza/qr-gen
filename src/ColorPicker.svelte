@@ -15,6 +15,7 @@
   let v = 0 // 0..1
   let a = 1 // 0..1
   let initialized = false
+  let lastSyncedValue = value
 
   function clamp(n: number, min = 0, max = 1): number {
     return Math.min(max, Math.max(min, n))
@@ -78,10 +79,17 @@
   $: hueColor = `hsl(${h}, 100%, 50%)`
   $: solidColor = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`
   $: swatchColor = `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${a})`
+  $: nextValue = `${hex6}${toHex(a * 255)}`
 
-  // Push HSVA back up into `value` once we've taken control.
-  $: if (initialized) {
-    value = `${hex6}${toHex(a * 255)}`
+  // Keep internal HSVA and externally controlled values in lockstep.
+  $: if (initialized && value !== lastSyncedValue && value !== nextValue) {
+    syncFromValue(value)
+    lastSyncedValue = value
+  }
+
+  $: if (initialized && value !== nextValue) {
+    lastSyncedValue = nextValue
+    value = nextValue
   }
 
   function syncFromValue(hex: string): void {
@@ -98,6 +106,7 @@
 
   onMount(() => {
     syncFromValue(value)
+    lastSyncedValue = value
     initialized = true
   })
 

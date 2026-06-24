@@ -1,9 +1,16 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
   import { toDataURL, toString } from 'qrcode'
   import type { QRCodeToDataURLOptions, QRCodeToStringOptions } from 'qrcode'
   import ColorPicker from './ColorPicker.svelte'
 
   type DownloadFormat = 'png' | 'svg'
+  type UrlState = {
+    input: string
+    darkColor: string
+    lightColor: string
+    logoColor: string
+  }
 
   type QrState =
     | { kind: 'idle' }
@@ -14,19 +21,91 @@
   // Fraction of the QR width occupied by the logo. Kept conservative so the
   // logo never obscures enough modules to break scanning.
   const LOGO_SCALE = 0.22
+  const DEFAULT_URL_STATE: UrlState = {
+    input: 'hello there',
+    darkColor: '#14492fff',
+    lightColor: '#ffffffff',
+    logoColor: '#ffffffff',
+  }
 
-  let input = 'hello there'
-  let darkColor = '#14492fff'
-  let lightColor = '#ffffffff'
-  let logoColor = '#ffffffff'
+  const initialUrlState = readInitialUrlState()
+
+  let input = initialUrlState.input
+  let darkColor = initialUrlState.darkColor
+  let lightColor = initialUrlState.lightColor
+  let logoColor = initialUrlState.logoColor
   let logoDataUrl = ''
   let logoInput: HTMLInputElement | undefined
   let qrState: QrState = { kind: 'idle' }
   let busy = false
   let requestId = 0
+  let urlSyncReady = false
 
   $: void renderQr(input, darkColor, lightColor, logoColor, logoDataUrl)
+  $: if (urlSyncReady) {
+    writeUrlState({ input, darkColor, lightColor, logoColor })
+  }
   $: encodedLength = getEncodedLength(qrState, input)
+
+  onMount(() => {
+    urlSyncReady = true
+
+    const onPopState = () => {
+      const state = readUrlState(window.location.search)
+      input = state.input
+      darkColor = state.darkColor
+      lightColor = state.lightColor
+      logoColor = state.logoColor
+    }
+
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  })
+
+  function readInitialUrlState(): UrlState {
+    if (typeof window === 'undefined') {
+      return DEFAULT_URL_STATE
+    }
+
+    return readUrlState(window.location.search)
+  }
+
+  function readUrlState(search: string): UrlState {
+    const params = new URLSearchParams(search)
+    return {
+      input: params.get('text') ?? DEFAULT_URL_STATE.input,
+      darkColor: parseUrlColor(params.get('dark'), DEFAULT_URL_STATE.darkColor),
+      lightColor: parseUrlColor(params.get('light'), DEFAULT_URL_STATE.lightColor),
+      logoColor: parseUrlColor(params.get('panel'), DEFAULT_URL_STATE.logoColor),
+    }
+  }
+
+  function parseUrlColor(value: string | null, fallback: string): string {
+    if (!value) {
+      return fallback
+    }
+
+    const normalized = value.startsWith('#') ? value : `#${value}`
+    return /^#[0-9a-fA-F]{8}$/.test(normalized) ? normalized.toLowerCase() : fallback
+  }
+
+  function writeUrlState(state: UrlState): void {
+    const params = new URLSearchParams()
+    params.set('text', state.input)
+    params.set('dark', stripColorHash(state.darkColor))
+    params.set('light', stripColorHash(state.lightColor))
+    params.set('panel', stripColorHash(state.logoColor))
+
+    const nextUrl = `${window.location.pathname}?${params.toString()}${window.location.hash}`
+    const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`
+    if (nextUrl !== currentUrl) {
+      window.history.replaceState(null, '', nextUrl)
+    }
+  }
+
+  function stripColorHash(color: string): string {
+    return color.startsWith('#') ? color.slice(1) : color
+  }
 
   function buildPngOptions(dark: string, light: string, hasLogo: boolean): QRCodeToDataURLOptions {
     return {
