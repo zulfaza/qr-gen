@@ -133,16 +133,26 @@
     })
   }
 
+  function getInputElement(target: EventTarget | null): HTMLInputElement | undefined {
+    return target instanceof HTMLInputElement ? target : undefined
+  }
+
   function onHueInput(event: Event): void {
-    h = Number((event.target as HTMLInputElement).value)
+    const input = getInputElement(event.target)
+    if (!input) return
+    h = Number(input.value)
   }
 
   function onAlphaInput(event: Event): void {
-    a = Number((event.target as HTMLInputElement).value) / 100
+    const input = getInputElement(event.target)
+    if (!input) return
+    a = Number(input.value) / 100
   }
 
   function onHexInput(event: Event): void {
-    const parsed = parseHex((event.target as HTMLInputElement).value)
+    const input = getInputElement(event.target)
+    if (!input) return
+    const parsed = parseHex(input.value)
     if (!parsed) return
     const [r, g, b, al] = parsed
     const [nh, ns, nv] = rgbToHsv(r, g, b)
@@ -153,16 +163,25 @@
   }
 
   function onAlphaText(event: Event): void {
-    const n = Number((event.target as HTMLInputElement).value)
+    const input = getInputElement(event.target)
+    if (!input) return
+    const n = Number(input.value)
     if (Number.isNaN(n)) return
     a = clamp(n, 0, 100) / 100
   }
 
-  const hasEyeDropper = typeof window !== 'undefined' && 'EyeDropper' in window
+  const hasEyeDropper = typeof window !== 'undefined' && window.EyeDropper !== undefined
+
+  // Shared range-slider styling: native appearance reset plus custom thumbs
+  // for both WebKit and Firefox. Reused by the hue and alpha sliders.
+  const sliderClass =
+    'm-0 h-[14px] w-full cursor-pointer touch-none appearance-none border border-[rgba(15,23,42,0.08)] ' +
+    '[&::-webkit-slider-thumb]:h-[18px] [&::-webkit-slider-thumb]:w-[18px] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-[rgba(15,23,42,0.25)] [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-[0_1px_3px_rgba(15,23,42,0.3)] ' +
+    '[&::-moz-range-thumb]:h-[18px] [&::-moz-range-thumb]:w-[18px] [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border [&::-moz-range-thumb]:border-[rgba(15,23,42,0.25)] [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:shadow-[0_1px_3px_rgba(15,23,42,0.3)]'
 
   async function pickFromScreen(): Promise<void> {
     try {
-      // @ts-expect-error EyeDropper is not in the TS DOM lib yet.
+      if (!window.EyeDropper) return
       const result = await new window.EyeDropper().open()
       syncFromValue(result.sRGBHex)
     } catch {
@@ -176,7 +195,7 @@
   }
 
   function onWindowPointerDown(event: PointerEvent): void {
-    if (open && root && !root.contains(event.target as Node)) open = false
+    if (open && root && event.target instanceof Node && !root.contains(event.target)) open = false
   }
 
   function onKeydown(event: KeyboardEvent): void {
@@ -186,25 +205,47 @@
 
 <svelte:window on:pointerdown={onWindowPointerDown} on:keydown={onKeydown} />
 
-<div class="picker" bind:this={root}>
-  <button type="button" class="picker-trigger" on:click={toggle} aria-expanded={open}>
-    <span class="picker-swatch" style="--c: {swatchColor}"></span>
-    <span class="picker-trigger-text">{hex6}{alphaPercent < 100 ? ` · ${alphaPercent}%` : ''}</span>
+<div class="relative" bind:this={root}>
+  <button
+    type="button"
+    class="focus-ring inline-flex min-h-16 w-full cursor-pointer items-center justify-start gap-4 border border-text bg-panel px-5 text-text hover:border-accent"
+    on:click={toggle}
+    aria-expanded={open}
+  >
+    <span
+      class="h-8 w-8 border border-border-strong [background-image:linear-gradient(var(--c),var(--c)),conic-gradient(#cbd5e1_0_25%,#fff_0_50%,#cbd5e1_0_75%,#fff_0)] [background-size:100%_100%,12px_12px]"
+      style="--c: {swatchColor}"
+    ></span>
+    <span class="text-[18px] font-bold uppercase tabular-nums text-text">{hex6}{alphaPercent < 100 ? ` · ${alphaPercent}%` : ''}</span>
   </button>
 
   {#if open}
-    <div class="picker-panel" role="dialog" aria-label={label}>
+    <div
+      class="absolute left-0 top-[calc(100%+8px)] z-30 flex w-[280px] flex-col gap-[14px] border border-text bg-panel p-4 shadow-[0_8px_8px_rgba(16,20,23,0.12)]"
+      role="dialog"
+      aria-label={label}
+    >
       <div
-        class="picker-sv"
+        class="relative h-40 w-full cursor-crosshair touch-none [background:linear-gradient(to_top,#000,transparent),linear-gradient(to_right,#fff,transparent),var(--hue)]"
         bind:this={svBox}
         on:pointerdown={onSvDown}
+        role="slider"
+        tabindex="0"
+        aria-label="{label} saturation and brightness"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow={Math.round(s * 100)}
+        aria-valuetext="{Math.round(s * 100)} percent saturation, {Math.round(v * 100)} percent brightness"
         style="--hue: {hueColor}"
       >
-        <div class="picker-sv-handle" style="left: {s * 100}%; top: {(1 - v) * 100}%; --c: {solidColor}"></div>
+        <div
+          class="pointer-events-none absolute h-[18px] w-[18px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(15,23,42,0.35)]"
+          style="left: {s * 100}%; top: {(1 - v) * 100}%; background: {solidColor}"
+        ></div>
       </div>
 
       <input
-        class="picker-slider picker-hue"
+        class="{sliderClass} [background:linear-gradient(to_right,#ff0000,#ffff00,#00ff00,#00ffff,#0000ff,#ff00ff,#ff0000)]"
         type="range"
         min="0"
         max="360"
@@ -215,7 +256,7 @@
       />
 
       <input
-        class="picker-slider picker-alpha"
+        class="{sliderClass} [background-image:linear-gradient(to_right,transparent,var(--solid)),conic-gradient(#cbd5e1_0_25%,#fff_0_50%,#cbd5e1_0_75%,#fff_0)] [background-size:100%_100%,12px_12px]"
         type="range"
         min="0"
         max="100"
@@ -226,9 +267,14 @@
         style="--solid: {solidColor}"
       />
 
-      <div class="picker-fields">
+      <div class="flex items-center gap-2">
         {#if hasEyeDropper}
-          <button type="button" class="picker-eyedropper" on:click={pickFromScreen} aria-label="Pick color from screen">
+          <button
+            type="button"
+            class="focus-ring inline-flex h-[38px] w-[38px] flex-none cursor-pointer items-center justify-center border border-border bg-panel p-0 text-muted hover:border-text hover:text-text"
+            on:click={pickFromScreen}
+            aria-label="Pick color from screen"
+          >
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="m2 22 1-1h3l9-9" />
               <path d="M3 21v-3l9-9" />
@@ -236,18 +282,18 @@
             </svg>
           </button>
         {/if}
-        <span class="picker-format">HEX</span>
+        <span class="text-[13px] font-bold text-muted">HEX</span>
         <input
-          class="picker-hex"
+          class="focus-ring min-h-[38px] w-full min-w-0 flex-1 border border-border bg-panel-soft px-2.5 text-sm uppercase tabular-nums text-text"
           type="text"
           value={hex6}
           on:change={onHexInput}
           spellcheck="false"
           aria-label="Hex value"
         />
-        <span class="picker-alpha-field">
+        <span class="flex min-h-[38px] flex-none items-center gap-0.5 border border-border bg-panel-soft px-2 text-sm text-muted">
           <input
-            class="picker-alpha-text"
+            class="focus-ring w-9 border-0 bg-transparent text-right text-sm tabular-nums text-text [-moz-appearance:textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none"
             type="number"
             min="0"
             max="100"
@@ -261,226 +307,3 @@
     </div>
   {/if}
 </div>
-
-<style>
-  .picker {
-    position: relative;
-  }
-
-  .picker-trigger {
-    width: 100%;
-    min-height: 44px;
-    justify-content: flex-start;
-    gap: 10px;
-    padding: 0 12px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: #ffffff;
-    color: var(--text);
-  }
-
-  .picker-trigger:hover:not(:disabled) {
-    background: #ffffff;
-    border-color: var(--border-strong);
-  }
-
-  .picker-swatch {
-    width: 26px;
-    height: 26px;
-    border-radius: 6px;
-    border: 1px solid rgba(15, 23, 42, 0.12);
-    background-image: linear-gradient(var(--c), var(--c)),
-      conic-gradient(#cbd5e1 0 25%, #fff 0 50%, #cbd5e1 0 75%, #fff 0);
-    background-size:
-      100% 100%,
-      12px 12px;
-  }
-
-  .picker-trigger-text {
-    font-weight: 400;
-    font-variant-numeric: tabular-nums;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-
-  .picker-panel {
-    position: absolute;
-    z-index: 30;
-    top: calc(100% + 8px);
-    left: 0;
-    width: 280px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    background: #ffffff;
-    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
-  }
-
-  .picker-sv {
-    position: relative;
-    width: 100%;
-    height: 160px;
-    border-radius: 10px;
-    cursor: crosshair;
-    touch-action: none;
-    background:
-      linear-gradient(to top, #000, transparent),
-      linear-gradient(to right, #fff, transparent),
-      var(--hue);
-  }
-
-  .picker-sv-handle {
-    position: absolute;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    border: 2px solid #fff;
-    background: var(--c);
-    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.35);
-    pointer-events: none;
-  }
-
-  .picker-slider {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 14px;
-    border-radius: 999px;
-    margin: 0;
-    cursor: pointer;
-    touch-action: none;
-    border: 1px solid rgba(15, 23, 42, 0.08);
-  }
-
-  .picker-hue {
-    background: linear-gradient(
-      to right,
-      #ff0000,
-      #ffff00,
-      #00ff00,
-      #00ffff,
-      #0000ff,
-      #ff00ff,
-      #ff0000
-    );
-  }
-
-  .picker-alpha {
-    background-image: linear-gradient(to right, transparent, var(--solid)),
-      conic-gradient(#cbd5e1 0 25%, #fff 0 50%, #cbd5e1 0 75%, #fff 0);
-    background-size:
-      100% 100%,
-      12px 12px;
-  }
-
-  .picker-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #fff;
-    border: 1px solid rgba(15, 23, 42, 0.25);
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.3);
-    cursor: pointer;
-  }
-
-  .picker-slider::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #fff;
-    border: 1px solid rgba(15, 23, 42, 0.25);
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.3);
-    cursor: pointer;
-  }
-
-  .picker-fields {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .picker-eyedropper {
-    min-height: 38px;
-    width: 38px;
-    flex: 0 0 auto;
-    padding: 0;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: #ffffff;
-    color: var(--muted);
-  }
-
-  .picker-eyedropper:hover:not(:disabled) {
-    background: var(--panel-soft);
-    border-color: var(--border-strong);
-    color: var(--text);
-  }
-
-  .picker-format {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--muted);
-  }
-
-  .picker-hex {
-    flex: 1 1 auto;
-    min-width: 0;
-    width: 100%;
-    min-height: 38px;
-    padding: 0 10px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--panel-soft);
-    color: var(--text);
-    font: inherit;
-    font-size: 14px;
-    font-variant-numeric: tabular-nums;
-    text-transform: uppercase;
-  }
-
-  .picker-alpha-field {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    flex: 0 0 auto;
-    min-height: 38px;
-    padding: 0 8px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--panel-soft);
-    color: var(--muted);
-    font-size: 14px;
-  }
-
-  .picker-alpha-text {
-    width: 36px;
-    border: none;
-    background: transparent;
-    color: var(--text);
-    font: inherit;
-    font-size: 14px;
-    font-variant-numeric: tabular-nums;
-    text-align: right;
-    -moz-appearance: textfield;
-  }
-
-  .picker-alpha-text::-webkit-outer-spin-button,
-  .picker-alpha-text::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-
-  .picker-hex:focus-visible,
-  .picker-alpha-text:focus-visible,
-  .picker-eyedropper:focus-visible,
-  .picker-trigger:focus-visible {
-    outline: 3px solid var(--focus);
-    outline-offset: 2px;
-  }
-</style>
