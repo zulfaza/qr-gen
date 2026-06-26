@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte'
+  import { onDestroy, onMount } from 'svelte'
   import { BrowserQRCodeReader } from '@zxing/browser'
 
   type ScanMode = 'camera' | 'upload'
@@ -8,6 +8,9 @@
     | { kind: 'scanning' }
     | { kind: 'success'; text: string }
     | { kind: 'error'; message: string }
+  type NoticeState =
+    | { kind: 'hidden' }
+    | { kind: 'visible'; message: string }
 
   export let onEditQr: (text: string) => void = () => {}
 
@@ -21,12 +24,22 @@
   let cameraSession = 0
   let copied = false
   let copyTimer: ReturnType<typeof setTimeout> | undefined
+  let notice: NoticeState = { kind: 'hidden' }
+  let noticeTimer: ReturnType<typeof setTimeout> | undefined
+
+  onMount(() => {
+    window.addEventListener('paste', onPaste)
+    return () => window.removeEventListener('paste', onPaste)
+  })
 
   onDestroy(() => {
     stopCamera()
     revokeUploadPreview()
     if (copyTimer) {
       clearTimeout(copyTimer)
+    }
+    if (noticeTimer) {
+      clearTimeout(noticeTimer)
     }
   })
 
@@ -144,8 +157,16 @@
       return
     }
 
+    await decodeImageFile(file)
+  }
+
+  async function decodeImageFile(file: File): Promise<void> {
     copied = false
+    hideNotice()
     revokeUploadPreview()
+    if (fileInput) {
+      fileInput.value = ''
+    }
     uploadPreview = URL.createObjectURL(file)
     scanState = { kind: 'scanning' }
 
@@ -154,8 +175,26 @@
       const result = await codeReader.decodeFromImageUrl(uploadPreview)
       scanState = { kind: 'success', text: result.getText() }
     } catch {
-      scanState = { kind: 'error', message: 'No QR code found in this image.' }
+      const message = 'No QR code found in this image.'
+      scanState = { kind: 'error', message }
+      showNotice(message)
     }
+  }
+
+  function onPaste(event: ClipboardEvent): void {
+    if (mode !== 'upload') {
+      return
+    }
+
+    const file = getClipboardImageFile(event.clipboardData)
+    if (!file) {
+      event.preventDefault()
+      showNotice('Paste an image file to scan a QR code.')
+      return
+    }
+
+    event.preventDefault()
+    void decodeImageFile(file)
   }
 
   function getImageFile(target: EventTarget | null): File | undefined {
@@ -166,8 +205,52 @@
     return target.files?.[0]
   }
 
+  function getClipboardImageFile(clipboardData: DataTransfer | null): File | undefined {
+    if (!clipboardData) {
+      return undefined
+    }
+
+    for (const item of clipboardData.items) {
+      if (item.kind !== 'file' || !item.type.startsWith('image/')) {
+        continue
+      }
+
+      const file = item.getAsFile()
+      if (file) {
+        return file
+      }
+    }
+
+    for (const file of clipboardData.files) {
+      if (file.type.startsWith('image/')) {
+        return file
+      }
+    }
+
+    return undefined
+  }
+
+  function showNotice(message: string): void {
+    if (noticeTimer) {
+      clearTimeout(noticeTimer)
+    }
+
+    notice = { kind: 'visible', message }
+    noticeTimer = setTimeout(hideNotice, 3500)
+  }
+
+  function hideNotice(): void {
+    if (noticeTimer) {
+      clearTimeout(noticeTimer)
+      noticeTimer = undefined
+    }
+
+    notice = { kind: 'hidden' }
+  }
+
   function clearUpload(): void {
     copied = false
+    hideNotice()
     revokeUploadPreview()
     if (fileInput) {
       fileInput.value = ''
@@ -192,6 +275,7 @@
 
   function scanAgain(): void {
     copied = false
+    hideNotice()
     if (mode === 'camera') {
       scanState = { kind: 'scanning' }
       void startCamera()
@@ -203,6 +287,24 @@
 </script>
 
 <div class="grid flex-1 min-[900px]:grid-cols-[minmax(0,1fr)_39%]">
+  {#if notice.kind === 'visible'}
+    <div
+      class="fixed right-4 top-4 z-50 flex max-w-[calc(100vw-2rem)] items-start gap-4 border border-error bg-error-soft p-4 text-left shadow-[6px_6px_0_var(--color-text)] min-[560px]:max-w-[360px]"
+      role="alert"
+    >
+      <p class="m-0 flex-1 text-sm font-bold leading-[1.45] text-error [overflow-wrap:anywhere]">
+        {notice.message}
+      </p>
+      <button
+        type="button"
+        class="focus-ring cursor-pointer border border-error bg-panel px-2 py-1 text-xs font-[900] uppercase tracking-[0.12em] text-error hover:bg-error hover:text-panel"
+        on:click={hideNotice}
+      >
+        Close
+      </button>
+    </div>
+  {/if}
+
   <div class="border-b border-text px-6 py-10 min-[760px]:px-12 min-[900px]:border-b-0 min-[900px]:border-r min-[1120px]:px-[90px] min-[1120px]:py-10">
     <div class="flex flex-wrap gap-2" role="tablist" aria-label="Scan method">
       <button
@@ -247,7 +349,7 @@
     {:else}
       <div class="mt-8" role="tabpanel">
         <p class="text-[17px] font-semibold text-subtle">
-          Upload a photo or screenshot that contains a QR code.
+          Upload or paste a photo or screenshot that contains a QR code.
         </p>
         <p class="mt-4 text-[17px] font-semibold text-subtle">
           Supported formats: JPG, PNG, WebP, GIF, and BMP.
