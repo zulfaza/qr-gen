@@ -43,6 +43,7 @@
   let busy = false
   let requestId = 0
   let urlSyncReady = false
+  let isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
 
   $: void renderQr(input, darkColor, lightColor, logoColor, logoDataUrl)
   $: if (urlSyncReady && activeTab === 'generate') {
@@ -333,6 +334,15 @@
     input = text
     activeTab = 'generate'
   }
+
+  function toggleTheme(): void {
+    isDark = !isDark
+    document.documentElement.classList.toggle('dark', isDark)
+    localStorage.setItem('theme', isDark ? 'dark' : 'light')
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', isDark ? '#0b0f14' : '#ffffff')
+  }
 </script>
 
 <main class="min-h-svh bg-panel text-text">
@@ -370,11 +380,33 @@
           </button>
         </nav>
       </div>
-      <p class="max-w-[360px] self-end text-pretty text-[18px] font-semibold leading-[1.35] text-muted min-[760px]:justify-self-end min-[760px]:text-right">
-        {activeTab === 'generate'
-          ? 'Type once. Export a clean QR as PNG or SVG.'
-          : 'Scan with your camera or upload an image to decode a QR code.'}
-      </p>
+      <div class="flex flex-col gap-6 self-end min-[760px]:items-end">
+        <button
+          type="button"
+          class="focus-ring inline-flex cursor-pointer items-center gap-2 border border-border-strong bg-panel px-4 py-2.5 text-[13px] font-[900] uppercase tracking-[0.14em] text-muted transition-colors duration-[180ms] hover:border-text hover:text-text"
+          on:click={toggleTheme}
+          aria-pressed={isDark}
+          aria-label="Toggle dark mode"
+        >
+          {#if isDark}
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+            </svg>
+            Light
+          {:else}
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
+            </svg>
+            Dark
+          {/if}
+        </button>
+        <p class="max-w-[360px] text-pretty text-[18px] font-semibold leading-[1.35] text-muted min-[760px]:text-right">
+          {activeTab === 'generate'
+            ? 'Type once. Export a clean QR as PNG or SVG.'
+            : 'Scan with your camera or upload an image to decode a QR code.'}
+        </p>
+      </div>
     </header>
 
     {#if activeTab === 'read'}

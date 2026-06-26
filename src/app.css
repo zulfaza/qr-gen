@@ -22,6 +22,24 @@
   --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
+/* Dark theme: override the same tokens so every utility flips automatically. */
+html.dark {
+  --color-bg: #0b0f14;
+  --color-panel: #12171d;
+  --color-panel-soft: #1a212a;
+  --color-text: #e8ebee;
+  --color-muted: #99a1ac;
+  --color-subtle: #6b7480;
+  --color-border: #2a323c;
+  --color-border-strong: #3c4651;
+  --color-accent: #4cae7f;
+  --color-accent-strong: #65c293;
+  --color-accent-soft: #15291f;
+  --color-error: #ff6f63;
+  --color-error-soft: #2a1311;
+  --color-success: #4cae7f;
+}
+
 @layer base {
   html {
     font:
@@ -45,25 +63,38 @@
 /* Visible focus ring used across interactive elements. */
 @utility focus-ring {
   &:focus-visible {
-    outline: 3px solid rgba(20, 73, 47, 0.28);
+    outline: 3px solid color-mix(in srgb, var(--color-accent) 45%, transparent);
     outline-offset: 2px;
   }
 }
 
 /* Checkerboard so transparent backgrounds are visible behind the QR preview. */
 @utility checkerboard {
-  background-color: #ffffff;
+  --checker-base: #ffffff;
+  --checker-square: #e2e8f0;
+  background-color: var(--checker-base);
   background-image:
-    linear-gradient(45deg, #e2e8f0 25%, transparent 25%),
-    linear-gradient(-45deg, #e2e8f0 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #e2e8f0 75%),
-    linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+    linear-gradient(45deg, var(--checker-square) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--checker-square) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--checker-square) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--checker-square) 75%);
   background-size: 16px 16px;
   background-position:
     0 0,
     0 8px,
     8px -8px,
     -8px 0;
+}
+
+html.dark .checkerboard {
+  --checker-base: #1a212a;
+  --checker-square: #3c4651;
+}
+
+/* The bold frames use the text color, which is near-white in dark mode.
+   Soften just the border color (not text/background) so frames read as gray. */
+html.dark .border-text {
+  border-color: #424c57;
 }
 
 @media (prefers-reduced-motion: reduce) {

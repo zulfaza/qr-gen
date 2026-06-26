@@ -11,6 +11,21 @@
     <meta name="theme-color" content="#ffffff" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
+    <script>
+      // Apply the saved/system theme before paint to avoid a flash.
+      (function () {
+        try {
+          var stored = localStorage.getItem('theme')
+          var dark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches
+          if (dark) {
+            document.documentElement.classList.add('dark')
+            var meta = document.querySelector('meta[name="theme-color"]')
+            if (meta) meta.setAttribute('content', '#0b0f14')
+          }
+        } catch (e) {}
+      })()
+    </script>
+
     <meta property="og:type" content="website" />
     <meta property="og:title" content="QR Generator" />
     <meta
