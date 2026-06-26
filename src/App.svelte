@@ -3,7 +3,9 @@
   import { toDataURL, toString } from 'qrcode'
   import type { QRCodeToDataURLOptions, QRCodeToStringOptions } from 'qrcode'
   import ColorPicker from './ColorPicker.svelte'
+  import QrReader from './QrReader.svelte'
 
+  type AppTab = 'generate' | 'read'
   type DownloadFormat = 'png' | 'svg'
   type UrlState = {
     input: string
@@ -30,6 +32,7 @@
 
   const initialUrlState = readInitialUrlState()
 
+  let activeTab: AppTab = 'generate'
   let input = initialUrlState.input
   let darkColor = initialUrlState.darkColor
   let lightColor = initialUrlState.lightColor
@@ -42,7 +45,7 @@
   let urlSyncReady = false
 
   $: void renderQr(input, darkColor, lightColor, logoColor, logoDataUrl)
-  $: if (urlSyncReady) {
+  $: if (urlSyncReady && activeTab === 'generate') {
     writeUrlState({ input, darkColor, lightColor, logoColor })
   }
   $: encodedLength = getEncodedLength(qrState, input)
@@ -325,6 +328,11 @@
         return state.text.length
     }
   }
+
+  function editFromScan(text: string): void {
+    input = text
+    activeTab = 'generate'
+  }
 </script>
 
 <main class="min-h-svh bg-panel text-text">
@@ -337,14 +345,41 @@
           id="page-title"
           class="text-balance text-[60px] font-[900] leading-[0.92] tracking-[-0.04em] min-[560px]:text-[78px] min-[760px]:text-[68px]"
         >
-          QR<br />Generator
+          QR<br />{activeTab === 'generate' ? 'Generator' : 'Reader'}
         </h1>
+        <nav class="mt-8 flex flex-wrap gap-2" aria-label="App sections">
+          <button
+            type="button"
+            class="focus-ring cursor-pointer border px-5 py-3 text-[14px] font-[900] uppercase tracking-[0.14em] transition-colors duration-[180ms] {activeTab === 'generate'
+              ? 'border-text bg-accent text-panel'
+              : 'border-border-strong bg-panel text-muted hover:border-text hover:text-text'}"
+            aria-current={activeTab === 'generate' ? 'page' : undefined}
+            on:click={() => (activeTab = 'generate')}
+          >
+            Generate
+          </button>
+          <button
+            type="button"
+            class="focus-ring cursor-pointer border px-5 py-3 text-[14px] font-[900] uppercase tracking-[0.14em] transition-colors duration-[180ms] {activeTab === 'read'
+              ? 'border-text bg-accent text-panel'
+              : 'border-border-strong bg-panel text-muted hover:border-text hover:text-text'}"
+            aria-current={activeTab === 'read' ? 'page' : undefined}
+            on:click={() => (activeTab = 'read')}
+          >
+            Read
+          </button>
+        </nav>
       </div>
       <p class="max-w-[360px] self-end text-pretty text-[18px] font-semibold leading-[1.35] text-muted min-[760px]:justify-self-end min-[760px]:text-right">
-        Type once. Export a clean QR as PNG or SVG.
+        {activeTab === 'generate'
+          ? 'Type once. Export a clean QR as PNG or SVG.'
+          : 'Scan with your camera or upload an image to decode a QR code.'}
       </p>
     </header>
 
+    {#if activeTab === 'read'}
+      <QrReader onEditQr={editFromScan} />
+    {:else}
     <div class="grid flex-1 min-[900px]:grid-cols-[minmax(0,1fr)_39%]">
       <div class="border-b border-text px-6 py-10 min-[760px]:px-12 min-[900px]:border-b-0 min-[900px]:border-r min-[1120px]:px-[90px] min-[1120px]:py-10">
         <div class="flex items-baseline justify-between gap-4">
@@ -511,6 +546,7 @@
         {/if}
       </aside>
     </div>
+    {/if}
 
     <footer class="flex items-center justify-between border-t border-text px-6 py-5 text-[15px] font-bold uppercase tracking-[0.18em] text-subtle min-[760px]:px-12 min-[1120px]:px-[90px]">
       <span>&copy; 2026</span>
